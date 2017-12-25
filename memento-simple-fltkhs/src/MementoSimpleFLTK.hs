@@ -10,6 +10,8 @@ data SimpleWidget event = SimpleWidget
 
 instance Diff (SimpleWidget event) where
   type Patch (SimpleWidget event) = ()
+  diff SimpleWidget SimpleWidget = ()
+  patch () SimpleWidget = SimpleWidget
 
 instance Memento IO SimpleWidgetO (SimpleWidget (IO ()))
 
