@@ -15,7 +15,7 @@ license: PublicDomain
 github: gelisam/memento
 category: GUI
 
-ghc-options: -Wall
+ghc-options: -Wall -Werror
 
 dependencies:
   - base
