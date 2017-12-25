@@ -1,0 +1,28 @@
+name: memento
+version: 0.1.0.0
+synopsis: |
+  The "virtual DOM" technique, but not just for DOMs.
+description: |
+  Imperative objects have an internal state. Call the object's type 'o', and its
+  state's type 'a'. We link 'o' and 'a' by converting changes to 'a' into
+  imperative actions on 'o'. This way, we can use a "virtual DOM" approach to
+  updating 'o': the user describes the state they want using a pure function
+  which returns an 'a', and we diff this 'a' with the previous one to determine
+  how to update 'o'.
+
+  In real-life, a memento is "an object kept as a reminder or souvenir of a
+  person or event". In this library, events lead to a new 'a', but this 'a' is
+  ephemeral, it is the 'o' which "remembers" that the event has occurred.
+maintainer: Samuel Gélineau <gelisam@gmail.com>
+license: PublicDomain
+github: gelisam/memento
+category: Data
+
+ghc-options: -Wall
+
+dependencies:
+  - base
+  - monoidal-diff
+
+library:
+  source-dirs: src

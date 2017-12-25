@@ -1,0 +1,6 @@
+resolver: lts-10.0
+packages:
+- monoidal-diff
+- memento
+- memento-simple-fltkhs
+extra-deps: []

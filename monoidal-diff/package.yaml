@@ -1,0 +1,20 @@
+name: monoidal-diff
+version: 0.1.0.0
+synopsis: |
+  Diff values to obtain concatenatable patches.
+description: |
+  See the 'gdiff' package for a much more powerful solution. Our main advantage
+  over 'gdiff' is that our 'Patch' type is a plain old algebraic datatype, for
+  which instances can easily be derived.
+maintainer: Samuel Gélineau <gelisam@gmail.com>
+license: PublicDomain
+github: gelisam/memento
+category: Data
+
+ghc-options: -Wall
+
+dependencies:
+  - base
+
+library:
+  source-dirs: src
