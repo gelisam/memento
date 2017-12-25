@@ -13,7 +13,10 @@ instance Diff (SimpleWidget event) where
   diff SimpleWidget SimpleWidget = ()
   patch () SimpleWidget = SimpleWidget
 
-instance Memento IO SimpleWidgetO (SimpleWidget (IO ()))
+instance Memento IO SimpleWidgetO (SimpleWidget (IO ())) where
+  newMemento SimpleWidget = pure SimpleWidgetO
+  modifyMemento () SimpleWidgetO = pure SimpleWidgetO
+  deleteMemento SimpleWidgetO = pure ()
 
 
 runMementoFLTK :: (Diff model, Eq event)
