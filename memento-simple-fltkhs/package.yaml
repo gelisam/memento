@@ -30,3 +30,15 @@ executable:
   source-dirs: demo
   dependencies:
     - memento-simple-fltkhs
+
+tests:
+  doctests:
+    main: doctests.hs
+    ghc-options: [-threaded]
+    source-dirs:
+      - test
+      - src
+      - demo
+    dependencies:
+      - doctest
+      - doctest-discover

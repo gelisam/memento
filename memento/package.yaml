@@ -26,3 +26,14 @@ dependencies:
 
 library:
   source-dirs: src
+
+tests:
+  doctests:
+    main: doctests.hs
+    ghc-options: [-threaded]
+    source-dirs:
+      - test
+      - src
+    dependencies:
+      - doctest
+      - doctest-discover
