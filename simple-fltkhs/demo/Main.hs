@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RecursiveDo #-}
 module Main where
 
+import Data.IORef
 import Data.Text
 import Graphics.UI.FLTK.LowLevel.Fl_Types (Rectangle(..), Position(..), X(..), Y(..), Size(..),Width(..), Height(..))
 import qualified Graphics.UI.FLTK.LowLevel.FL as FL
@@ -8,10 +9,11 @@ import qualified Graphics.UI.FLTK.LowLevel.Fl_Types as FLTK
 import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 
-buttonCb :: FLTK.Ref FLTK.Button -> IO ()
-buttonCb buttonRef = do
-  label <- FLTK.getLabel buttonRef
-  if (label == "Hello world")
+buttonCb :: IORef Bool -> FLTK.Ref FLTK.Button -> IO ()
+buttonCb boolRef buttonRef = do
+  modifyIORef boolRef not
+  bool <- readIORef boolRef
+  if bool
   then FLTK.setLabel buttonRef "Goodbye world"
   else FLTK.setLabel buttonRef "Hello world"
 
@@ -26,12 +28,13 @@ newWindow size = FLTK.windowNew size Nothing Nothing
 
 newAppWindow :: IO (FLTK.Ref FLTK.Window)
 newAppWindow = mdo
+  boolRef <- newIORef False
   windowRef <- newWindow (Size (Width 115) (Height 100))
 
   buttonRef <- newButton (Rectangle (Position (X 10) (Y 30))
                                     (Size (Width 95) (Height 30)))
                          "Hello world"
-                         (buttonCb buttonRef)
+                         (buttonCb boolRef buttonRef)
   FLTK.setLabelsize buttonRef (FLTK.FontSize 10)
   FLTK.add windowRef buttonRef
 
