@@ -32,6 +32,7 @@ executable:
   source-dirs: demo
   dependencies:
     - simple-fltkhs
+    - text
   when:
     - condition: flag(FastCompile)
       then:
