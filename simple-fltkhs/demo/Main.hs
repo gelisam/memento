@@ -21,11 +21,12 @@ newButton rect label callback = do
   FLTK.setCallback buttonRef (\_ -> callback)
   pure buttonRef
 
+newWindow :: Size -> IO (FLTK.Ref FLTK.Window)
+newWindow size = FLTK.windowNew size Nothing Nothing
+
 newAppWindow :: IO (FLTK.Ref FLTK.Window)
 newAppWindow = mdo
-  windowRef <- FLTK.windowNew (Size (Width 115) (Height 100))
-                              Nothing
-                              Nothing
+  windowRef <- newWindow (Size (Width 115) (Height 100))
 
   buttonRef <- newButton (Rectangle (Position (X 10) (Y 30))
                                     (Size (Width 95) (Height 30)))
