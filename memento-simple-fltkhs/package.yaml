@@ -19,6 +19,7 @@ ghc-options: -Wall -Werror
 
 dependencies:
   - base
+  - fltkhs
   - memento
   - monoidal-diff
 
