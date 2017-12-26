@@ -1,0 +1,40 @@
+name: simple-fltkhs
+version: 0.1.0.0
+synopsis: |
+  A very limited subset of fltkhs which only supports windows and buttons.
+description: |
+  Like most bindings to non-Haskell GUI libraries, fltkhs's API is very large.
+  In order to demonstrate how wrapping such an API would work without being
+  overburdened by details, this library exposes a small part of fltkhs via a
+  much smaller, simpler API.
+maintainer: Samuel Gélineau <gelisam@gmail.com>
+license: PublicDomain
+github: gelisam/memento
+category: GUI
+
+ghc-options: -Wall -Werror
+
+dependencies:
+  - base
+  - fltkhs
+
+library:
+  source-dirs: src
+
+executable:
+  main: Main.hs
+  source-dirs: demo
+  dependencies:
+    - simple-fltkhs
+
+tests:
+  doctests:
+    main: doctests.hs
+    ghc-options: [-threaded]
+    source-dirs:
+      - test
+      - src
+      - demo
+    dependencies:
+      - doctest
+      - doctest-discover

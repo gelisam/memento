@@ -1,8 +1,9 @@
 resolver: lts-8.13
 packages:
-- monoidal-diff
 - memento
 - memento-simple-fltkhs
+- monoidal-diff
+- simple-fltkhs
 extra-deps:
 - fltkhs-0.5.4.2
 

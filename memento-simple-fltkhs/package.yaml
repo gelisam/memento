@@ -4,12 +4,10 @@ synopsis: |
   Wrapping a low-level GUI library using memento: a proof-of-concept.
 description: |
   Libraries which provide bindings to an upstream non-Haskell GUI library all
-  have an imperative API because that's the API which the upstream library has.
-
-  One of the goals of the 'memento' package is to make it possible to implement
-  a pure API on top of those low-level bindings. Since those APIs are typically
-  very large, we begin with a more achievable task: this library re-exposes a
-  small part of FLTKHS, and then wrapping that smaller API using memento.
+  have an imperative API, because that's the API which the upstream library
+  has. 'memento' makes it possible to implement a pure API on top of those
+  low-level bindings. We demonstrate the technique by wrapping a very small GUI
+  library, 'simple-fltkhs'.
 maintainer: Samuel Gélineau <gelisam@gmail.com>
 license: PublicDomain
 github: gelisam/memento
@@ -22,6 +20,7 @@ dependencies:
   - fltkhs
   - memento
   - monoidal-diff
+  - simple-fltkhs
 
 library:
   source-dirs: src
