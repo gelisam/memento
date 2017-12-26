@@ -2,30 +2,30 @@
 module Main where
 
 import qualified Graphics.UI.FLTK.LowLevel.FL as FL
-import Graphics.UI.FLTK.LowLevel.Fl_Types
-import Graphics.UI.FLTK.LowLevel.FLTKHS
+import qualified Graphics.UI.FLTK.LowLevel.Fl_Types as FLTK
+import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 
-buttonCb :: Ref Button -> IO ()
+buttonCb :: FLTK.Ref FLTK.Button -> IO ()
 buttonCb buttonRef = do
-  label <- getLabel buttonRef
+  label <- FLTK.getLabel buttonRef
   if (label == "Hello world")
-  then setLabel buttonRef "Goodbye world"
-  else setLabel buttonRef "Hello world"
+  then FLTK.setLabel buttonRef "Goodbye world"
+  else FLTK.setLabel buttonRef "Hello world"
 
 ui :: IO ()
 ui = do
-  windowRef <- windowNew (Size (Width 115) (Height 100))
-                         Nothing
-                         Nothing
-  begin windowRef
-  do buttonRef <- buttonNew (Rectangle (Position (X 10) (Y 30))
-                                       (Size (Width 95) (Height 30)))
-                            (Just "Hello world")
-     setLabelsize buttonRef (FontSize 10)
-     setCallback buttonRef buttonCb
-  end windowRef
-  showWidget windowRef
+  windowRef <- FLTK.windowNew (FLTK.Size (FLTK.Width 115) (FLTK.Height 100))
+                              Nothing
+                              Nothing
+  FLTK.begin windowRef
+  do buttonRef <- FLTK.buttonNew (FLTK.Rectangle (FLTK.Position (FLTK.X 10) (FLTK.Y 30))
+                                                 (FLTK.Size (FLTK.Width 95) (FLTK.Height 30)))
+                                 (Just "Hello world")
+     FLTK.setLabelsize buttonRef (FLTK.FontSize 10)
+     FLTK.setCallback buttonRef buttonCb
+  FLTK.end windowRef
+  FLTK.showWidget windowRef
 
 main :: IO ()
 main = do
