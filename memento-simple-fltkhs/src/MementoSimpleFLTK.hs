@@ -29,7 +29,7 @@ instance Diff patchEvent => Diff (PatchSimpleWidget patchEvent) where
 --- PatchSimpleWidget is defined in this file :(
 instance Memento IO SimpleWidgetO (PatchSimpleWidget (Last (IO ()))) where
   newMemento (SimpleWidget callback) = pure $ SimpleWidgetO callback
-  modifyMemento (PatchSimpleWidget p) (SimpleWidgetO callback) = pure $ SimpleWidgetO (act p callback)
+  modifyMemento (SimpleWidgetO callback) (PatchSimpleWidget p) = pure $ SimpleWidgetO (act p callback)
   deleteMemento _ = pure ()
 
 
