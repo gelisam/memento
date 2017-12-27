@@ -1,5 +1,7 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies #-}
 module MonoidalDiff where
+
+import Data.Monoid
 
 
 -- laws:
@@ -28,3 +30,42 @@ instance Diff () where
   type Patch () = ()
   diff () () = ()
   patch () () = ()
+
+
+newtype Atomic a = Atomic { getAtomic :: a }
+  deriving Show
+
+instance Eq a => Diff (Atomic a) where
+  type Patch (Atomic a) = Last a
+  diff (Atomic x) (Atomic x') | x == x'   = Last $ Nothing
+                              | otherwise = Last $ Just x'
+  patch (Last Nothing)   (Atomic x) = Atomic x
+  patch (Last (Just x')) _          = Atomic x'
+
+
+instance (Diff a, Diff b) => Diff (a, b) where
+  type Patch (a, b) = (Patch a, Patch b)
+  diff (a, b) (a', b') = (diff a a', diff b b')
+  patch (a2a', b2b') (a, b) = (patch a2a' a, patch b2b' b)
+
+
+data PatchEither a b
+  = PatchEither (Patch a) (Patch b)
+  | ReplaceEither (Either a b)
+deriving instance (Show a, Show b, Show (Patch a), Show (Patch b)) => Show (PatchEither a b)
+
+instance (Diff a, Diff b) => Monoid (PatchEither a b) where
+  mempty = PatchEither mempty mempty
+  PatchEither a2a' b2b'   `mappend` PatchEither a'2a'' b'2b'' = PatchEither (a2a' <> a'2a'') (b2b' <> b'2b'')
+  ReplaceEither (Left  a) `mappend` PatchEither a2a'   _      = ReplaceEither $ Left  $ patch a2a' a
+  ReplaceEither (Right b) `mappend` PatchEither _      b2b'   = ReplaceEither $ Right $ patch b2b' b
+  _                       `mappend` ReplaceEither e'          = ReplaceEither e'
+
+instance (Diff a, Diff b) => Diff (Either a b) where
+  type Patch (Either a b) = PatchEither a b
+  diff (Left  a) (Left  a') = PatchEither (diff a a') mempty
+  diff (Right b) (Right b') = PatchEither mempty (diff b b')
+  diff _         e'         = ReplaceEither e'
+  patch (PatchEither a2a' _) (Left  a) = Left  $ patch a2a' a
+  patch (PatchEither _ b2b') (Right b) = Right $ patch b2b' b
+  patch (ReplaceEither e')   _         = e'
