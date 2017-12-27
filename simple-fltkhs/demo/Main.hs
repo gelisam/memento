@@ -4,7 +4,6 @@ module Main where
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Text
-import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 import SimpleFLTK
 
@@ -33,20 +32,20 @@ data AppRefs = AppRefs
   , appRefsCountButton     :: Button
   }
 
-refresh :: AppRefs -> IO ()
+refresh :: AppRefs -> SimpleFLTK ()
 refresh appRefs = do
-  AppState{..} <- readIORef (appRefsAppState appRefs)
-  FLTK.setLabel (appRefsDirectionButton appRefs) $ if appStateGoingUp then "^" else "v"
-  FLTK.setLabel (appRefsCountButton     appRefs) $ pack . show $ appStateCount
+  AppState{..} <- liftIO $ readIORef (appRefsAppState appRefs)
+  setButtonLabel (appRefsDirectionButton appRefs) $ if appStateGoingUp then "^" else "v"
+  setButtonLabel (appRefsCountButton     appRefs) $ pack . show $ appStateCount
 
-directionButtonCallback :: AppRefs -> IO ()
+directionButtonCallback :: AppRefs -> SimpleFLTK ()
 directionButtonCallback appRefs = do
-  modifyIORef (appRefsAppState appRefs) toggleDirection
+  liftIO $ modifyIORef (appRefsAppState appRefs) toggleDirection
   refresh appRefs
 
-countButtonCallback :: AppRefs -> IO ()
+countButtonCallback :: AppRefs -> SimpleFLTK ()
 countButtonCallback appRefs = do
-  modifyIORef (appRefsAppState appRefs) bumpCount
+  liftIO $ modifyIORef (appRefsAppState appRefs) bumpCount
   refresh appRefs
 
 

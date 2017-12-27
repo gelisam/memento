@@ -34,12 +34,13 @@ when:
 
 dependencies:
   - base
-  - fltkhs
   - text
   - transformers
 
 library:
   source-dirs: src
+  dependencies:
+    - fltkhs
 
 executable:
   main: Main.hs

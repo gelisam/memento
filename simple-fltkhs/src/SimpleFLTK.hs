@@ -12,7 +12,7 @@ import qualified Graphics.UI.FLTK.LowLevel.Fl_Types as FLTK
 import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 
-data SimpleWidgetO = SimpleWidgetO (IO ())
+data SimpleWidgetO = SimpleWidgetO Callback
 
 
 type Window = FLTK.Ref FLTK.Window
@@ -20,6 +20,7 @@ type Button = FLTK.Ref FLTK.Button
 
 
 type SimpleFLTK = ReaderT Window IO
+type Callback = SimpleFLTK ()
 
 runSimpleFLTK :: Size -> SimpleFLTK () -> IO ()
 runSimpleFLTK windowSize body = do
@@ -30,19 +31,20 @@ runSimpleFLTK windowSize body = do
   FL.flush
 
 
-newButton :: Rectangle -> Text -> IO () -> SimpleFLTK Button
+newButton :: Rectangle -> Text -> Callback -> SimpleFLTK Button
 newButton rect label callback = ReaderT $ \window -> do
   button <- FLTK.buttonNew rect (Just label)
-  FLTK.setCallback button (\_ -> callback)
+  FLTK.setCallback button (\_ -> runReaderT callback window)
 
   FLTK.add window button
   pure button
 
-modifyButtonLabel :: Button -> Text -> SimpleFLTK ()
-modifyButtonLabel button label = liftIO $ FLTK.setLabel button label
+setButtonLabel :: Button -> Text -> SimpleFLTK ()
+setButtonLabel button label = liftIO $ FLTK.setLabel button label
 
-modifyButtonCallback :: Button -> IO () -> SimpleFLTK ()
-modifyButtonCallback button callback = liftIO $ FLTK.setCallback button (\_ -> callback)
+setButtonCallback :: Button -> Callback -> SimpleFLTK ()
+setButtonCallback button callback = ReaderT $ \window -> do
+  FLTK.setCallback button (\_ -> runReaderT callback window)
 
 deleteButton :: Button -> SimpleFLTK ()
 deleteButton button = ReaderT $ \window -> do
