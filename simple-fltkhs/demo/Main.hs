@@ -13,9 +13,20 @@ import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 type Window = FLTK.Ref FLTK.Window
 type Button = FLTK.Ref FLTK.Button
-type M = ReaderT Window IO
 
-newButton :: Rectangle -> Text -> IO () -> M Button
+
+type SimpleFLTK = ReaderT Window IO
+
+runSimpleFLTK :: Size -> SimpleFLTK () -> IO ()
+runSimpleFLTK windowSize body = do
+  window <- FLTK.windowNew windowSize Nothing Nothing
+  runReaderT body window
+  FLTK.showWidget window
+  _ <- FL.run
+  FL.flush
+
+
+newButton :: Rectangle -> Text -> IO () -> SimpleFLTK Button
 newButton rect label callback = ReaderT $ \window -> do
   button <- FLTK.buttonNew rect (Just label)
   FLTK.setCallback button (\_ -> callback)
@@ -23,20 +34,16 @@ newButton rect label callback = ReaderT $ \window -> do
   FLTK.add window button
   pure button
 
-modifyButtonLabel :: Button -> Text -> M ()
+modifyButtonLabel :: Button -> Text -> SimpleFLTK ()
 modifyButtonLabel button label = liftIO $ FLTK.setLabel button label
 
-modifyButtonCallback :: Button -> IO () -> M ()
+modifyButtonCallback :: Button -> IO () -> SimpleFLTK ()
 modifyButtonCallback button callback = liftIO $ FLTK.setCallback button (\_ -> callback)
 
-deleteButton :: Button -> M ()
+deleteButton :: Button -> SimpleFLTK ()
 deleteButton button = ReaderT $ \window -> do
   FLTK.removeWidget window button
   FL.deleteWidget button
-
-
-newWindow :: Size -> IO Window
-newWindow size = FLTK.windowNew size Nothing Nothing
 
 
 data AppState = AppState
@@ -80,24 +87,15 @@ countButtonCallback appRefs = do
   refresh appRefs
 
 
-newAppWindow :: IO Window
-newAppWindow = mdo
-  window <- newWindow (Size (Width 130) (Height 90))
-  appRefs <- flip runReaderT window $ do
-    AppRefs <$> liftIO (newIORef (AppState True 0))
-            <*> newButton (Rectangle (Position (X 30) (Y 30))
-                                     (Size (Width 30) (Height 30)))
-                          "^"
-                          (directionButtonCallback appRefs)
-            <*> newButton (Rectangle (Position (X 70) (Y 30))
-                                     (Size (Width 30) (Height 30)))
-                          "0"
-                          (countButtonCallback appRefs)
-  pure window
-
 main :: IO ()
-main = do
-  window <- newAppWindow
-  FLTK.showWidget window
-  _ <- FL.run
-  FL.flush
+main = runSimpleFLTK (Size (Width 130) (Height 90)) $ mdo
+  appRefs <- AppRefs <$> liftIO (newIORef (AppState True 0))
+                     <*> newButton (Rectangle (Position (X 30) (Y 30))
+                                              (Size (Width 30) (Height 30)))
+                                   "^"
+                                   (directionButtonCallback appRefs)
+                     <*> newButton (Rectangle (Position (X 70) (Y 30))
+                                              (Size (Width 30) (Height 30)))
+                                   "0"
+                                   (countButtonCallback appRefs)
+  pure ()
