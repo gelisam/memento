@@ -36,6 +36,9 @@ newButton rect label callback = ReaderT $ \windowRef -> do
   FLTK.add windowRef buttonRef
   pure buttonRef
 
+setButtonRectangle :: ButtonRef -> Rectangle -> SimpleFLTK ()
+setButtonRectangle buttonRef rectangle = liftIO $ FLTK.resize buttonRef rectangle
+
 setButtonLabel :: ButtonRef -> Text -> SimpleFLTK ()
 setButtonLabel buttonRef label = liftIO $ FLTK.setLabel buttonRef label
 

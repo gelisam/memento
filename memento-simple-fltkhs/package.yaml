@@ -35,13 +35,15 @@ when:
 
 dependencies:
   - base
-  - fltkhs
-  - memento
-  - monoidal-diff
-  - simple-fltkhs
 
 library:
   source-dirs: src
+  dependencies:
+    - fltkhs
+    - memento
+    - monoidal-diff
+    - simple-fltkhs
+    - text
 
 executable:
   main: Main.hs
