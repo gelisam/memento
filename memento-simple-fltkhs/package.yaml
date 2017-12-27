@@ -13,7 +13,25 @@ license: PublicDomain
 github: gelisam/memento
 category: GUI
 
+flags:
+  FastCompile:
+    description: Turn off optimizations for faster compilation
+    manual: True
+    default: False
+
 ghc-options: -Wall -Werror
+when:
+  - condition: flag(FastCompile)
+    then:
+      ghc-options: -fno-specialise -fmax-simplifier-iterations=0 -fsimplifier-phases=0
+    else:
+      ghc-options: -O2
+  - condition: os(windows)
+    ghc-options: -pgml g++ "-optl-Wl,--allow-multiple-definition" "-optl-Wl,--whole-archive" "-optl-Wl,-Bstatic" "-optl-Wl,-lfltkc" "-optl-Wl,-Bdynamic" "-optl-Wl,--no-whole-archive"
+  - condition: os(darwin)
+    ghc-options: "-optl-Wl,-lfltkc"
+  - condition: "!os(darwin) && !os(windows)"
+    ghc-options: -pgml g++ "-optl-Wl,--allow-multiple-definition" "-optl-Wl,--whole-archive" "-optl-Wl,-Bstatic" "-optl-Wl,-lfltkc" "-optl-Wl,-Bdynamic" "-optl-Wl,--no-whole-archive"
 
 dependencies:
   - base
