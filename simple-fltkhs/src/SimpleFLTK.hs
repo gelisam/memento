@@ -1,4 +1,4 @@
 module SimpleFLTK where
 
 
-data SimpleWidgetO = SimpleWidgetO
+data SimpleWidgetO = SimpleWidgetO (IO ())

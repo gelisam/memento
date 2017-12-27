@@ -1,14 +1,13 @@
 module Main where
 
 import MementoSimpleFLTK
-import MonoidalDiff
 
 
 view :: () -> SimpleWidget ()
-view () = SimpleWidget
+view () = SimpleWidget ()
 
-onEvent :: () -> Patch ()
-onEvent () = ()
+onEvent :: () -> () -> ()
+onEvent () () = ()
 
 main :: IO ()
 main = runMementoFLTK () view onEvent

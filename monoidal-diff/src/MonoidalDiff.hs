@@ -5,9 +5,15 @@ import Data.Monoid
 
 
 -- laws:
---   diff x y `patch` x = y
---   patch mempty = id
---   patch (p <> q) = patch p >>> patch q
+--   act mempty = id
+--   act (p <> q) = act p >>> act q
+--
+class Monoid a => Action a where
+  type Operand a
+  act :: a -> Operand a -> Operand a
+
+-- laws:
+--   diff x y `act` x = y
 --
 -- Note that `diff x y <> diff y z = diff x z` is not a law, since we want to
 -- allow instances which make use of the extra information about 'y' to infer
@@ -16,56 +22,58 @@ import Data.Monoid
 --
 -- Also note that there is no guarantee on the meaning of @diff x y@ when
 -- applied to values other than @x@. In particular, it is tempting to write
--- @diff x y1 <> diff x y2 `patch` x@ to mimic a version-control system's
+-- @diff x y1 <> diff x y2 `act` x@ to mimic a version-control system's
 -- three-way merge. This will always produce some result, but it cannot be the
 -- result you would expect from a three-way merge, because such a merge can
--- fail with a merge conflict, whereas 'patch' has no way to indicate failure.
-class Monoid (Patch a) => Diff a where
-  type Patch a
-  diff  :: a -> a -> Patch a
-  patch :: Patch a -> a -> a
+-- fail with a merge conflict, whereas 'act' has no way to indicate failure.
+class Action a => Diff a where
+  diff  :: Operand a -> Operand a -> a
 
+
+instance Action () where
+  type Operand () = ()
+  act () () = ()
 
 instance Diff () where
-  type Patch () = ()
   diff () () = ()
-  patch () () = ()
 
 
-newtype Atomic a = Atomic { getAtomic :: a }
-  deriving Show
+instance Action (Last a) where
+  type Operand (Last a) = a
+  act (Last Nothing)   x = x
+  act (Last (Just x')) _ = x'
 
-instance Eq a => Diff (Atomic a) where
-  type Patch (Atomic a) = Last a
-  diff (Atomic x) (Atomic x') | x == x'   = Last $ Nothing
-                              | otherwise = Last $ Just x'
-  patch (Last Nothing)   (Atomic x) = Atomic x
-  patch (Last (Just x')) _          = Atomic x'
+instance Eq a => Diff (Last a) where
+  diff x x' | x == x'   = Last $ Nothing
+            | otherwise = Last $ Just x'
 
+
+instance (Action a, Action b) => Action (a, b) where
+  type Operand (a, b) = (Operand a, Operand b)
+  act (a, b) (x, y) = (act a x, act b y)
 
 instance (Diff a, Diff b) => Diff (a, b) where
-  type Patch (a, b) = (Patch a, Patch b)
-  diff (a, b) (a', b') = (diff a a', diff b b')
-  patch (a2a', b2b') (a, b) = (patch a2a' a, patch b2b' b)
+  diff (x, y) (x', y') = (diff x x', diff y y')
 
 
 data PatchEither a b
-  = PatchEither (Patch a) (Patch b)
-  | ReplaceEither (Either a b)
-deriving instance (Show a, Show b, Show (Patch a), Show (Patch b)) => Show (PatchEither a b)
+  = PatchEither a b
+  | ReplaceEither (Either (Operand a) (Operand b))
+deriving instance (Show a, Show b, Show (Operand a), Show (Operand b)) => Show (PatchEither a b)
 
-instance (Diff a, Diff b) => Monoid (PatchEither a b) where
+instance (Action a, Action b) => Monoid (PatchEither a b) where
   mempty = PatchEither mempty mempty
-  PatchEither a2a' b2b'   `mappend` PatchEither a'2a'' b'2b'' = PatchEither (a2a' <> a'2a'') (b2b' <> b'2b'')
-  ReplaceEither (Left  a) `mappend` PatchEither a2a'   _      = ReplaceEither $ Left  $ patch a2a' a
-  ReplaceEither (Right b) `mappend` PatchEither _      b2b'   = ReplaceEither $ Right $ patch b2b' b
-  _                       `mappend` ReplaceEither e'          = ReplaceEither e'
+  PatchEither a b `mappend` PatchEither a' b' = PatchEither (a <> a') (b <> b')
+  _               `mappend` ReplaceEither x'  = ReplaceEither x'
+  ReplaceEither x `mappend` p                 = ReplaceEither $ act p x
 
-instance (Diff a, Diff b) => Diff (Either a b) where
-  type Patch (Either a b) = PatchEither a b
-  diff (Left  a) (Left  a') = PatchEither (diff a a') mempty
-  diff (Right b) (Right b') = PatchEither mempty (diff b b')
-  diff _         e'         = ReplaceEither e'
-  patch (PatchEither a2a' _) (Left  a) = Left  $ patch a2a' a
-  patch (PatchEither _ b2b') (Right b) = Right $ patch b2b' b
-  patch (ReplaceEither e')   _         = e'
+instance (Action a, Action b) => Action (PatchEither a b) where
+  type Operand (PatchEither a b) = Either (Operand a) (Operand b)
+  act (PatchEither a _) (Left  x) = Left  (act a x)
+  act (PatchEither _ b) (Right y) = Right (act b y)
+  act (ReplaceEither x) _         = x
+
+instance (Diff a, Diff b) => Diff (PatchEither a b) where
+  diff (Left  x) (Left  x') = PatchEither (diff x x') mempty
+  diff (Right y) (Right y') = PatchEither mempty (diff y y')
+  diff _         x'         = ReplaceEither x'
