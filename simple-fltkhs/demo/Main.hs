@@ -28,8 +28,8 @@ bumpCount appState@AppState{..} = appState
 
 data AppRefs = AppRefs
   { appRefsAppState        :: IORef AppState
-  , appRefsDirectionButton :: Button
-  , appRefsCountButton     :: Button
+  , appRefsDirectionButton :: ButtonRef
+  , appRefsCountButton     :: ButtonRef
   }
 
 refresh :: AppRefs -> SimpleFLTK ()

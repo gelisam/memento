@@ -12,41 +12,38 @@ import qualified Graphics.UI.FLTK.LowLevel.Fl_Types as FLTK
 import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 
-data SimpleWidgetO = SimpleWidgetO Callback
+type WindowRef = FLTK.Ref FLTK.Window
+type ButtonRef = FLTK.Ref FLTK.Button
 
 
-type Window = FLTK.Ref FLTK.Window
-type Button = FLTK.Ref FLTK.Button
-
-
-type SimpleFLTK = ReaderT Window IO
+type SimpleFLTK = ReaderT WindowRef IO
 type Callback = SimpleFLTK ()
 
 runSimpleFLTK :: Size -> SimpleFLTK () -> IO ()
 runSimpleFLTK windowSize body = do
-  window <- FLTK.windowNew windowSize Nothing Nothing
-  runReaderT body window
-  FLTK.showWidget window
+  windowRef <- FLTK.windowNew windowSize Nothing Nothing
+  runReaderT body windowRef
+  FLTK.showWidget windowRef
   _ <- FL.run
   FL.flush
 
 
-newButton :: Rectangle -> Text -> Callback -> SimpleFLTK Button
-newButton rect label callback = ReaderT $ \window -> do
-  button <- FLTK.buttonNew rect (Just label)
-  FLTK.setCallback button (\_ -> runReaderT callback window)
+newButton :: Rectangle -> Text -> Callback -> SimpleFLTK ButtonRef
+newButton rect label callback = ReaderT $ \windowRef -> do
+  buttonRef <- FLTK.buttonNew rect (Just label)
+  FLTK.setCallback buttonRef (\_ -> runReaderT callback windowRef)
 
-  FLTK.add window button
-  pure button
+  FLTK.add windowRef buttonRef
+  pure buttonRef
 
-setButtonLabel :: Button -> Text -> SimpleFLTK ()
-setButtonLabel button label = liftIO $ FLTK.setLabel button label
+setButtonLabel :: ButtonRef -> Text -> SimpleFLTK ()
+setButtonLabel buttonRef label = liftIO $ FLTK.setLabel buttonRef label
 
-setButtonCallback :: Button -> Callback -> SimpleFLTK ()
-setButtonCallback button callback = ReaderT $ \window -> do
-  FLTK.setCallback button (\_ -> runReaderT callback window)
+setButtonCallback :: ButtonRef -> Callback -> SimpleFLTK ()
+setButtonCallback buttonRef callback = ReaderT $ \windowRef -> do
+  FLTK.setCallback buttonRef (\_ -> runReaderT callback windowRef)
 
-deleteButton :: Button -> SimpleFLTK ()
-deleteButton button = ReaderT $ \window -> do
-  FLTK.removeWidget window button
-  FL.deleteWidget button
+deleteButton :: ButtonRef -> SimpleFLTK ()
+deleteButton buttonRef = ReaderT $ \windowRef -> do
+  FLTK.removeWidget windowRef buttonRef
+  FL.deleteWidget buttonRef
