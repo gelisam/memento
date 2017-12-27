@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, RecursiveDo #-}
 module Main where
 
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Reader
 import Data.IORef
 import Data.Text
 import Graphics.UI.FLTK.LowLevel.Fl_Types (Rectangle(..), Position(..), X(..), Y(..), Size(..),Width(..), Height(..))
@@ -9,13 +11,31 @@ import qualified Graphics.UI.FLTK.LowLevel.Fl_Types as FLTK
 import qualified Graphics.UI.FLTK.LowLevel.FLTKHS as FLTK
 
 
-newButton :: Rectangle -> Text -> IO () -> IO (FLTK.Ref FLTK.Button)
-newButton rect label callback = do
-  buttonRef <- FLTK.buttonNew rect (Just label)
-  FLTK.setCallback buttonRef (\_ -> callback)
-  pure buttonRef
+type Window = FLTK.Ref FLTK.Window
+type Button = FLTK.Ref FLTK.Button
+type M = ReaderT Window IO
 
-newWindow :: Size -> IO (FLTK.Ref FLTK.Window)
+newButton :: Rectangle -> Text -> IO () -> M Button
+newButton rect label callback = ReaderT $ \window -> do
+  button <- FLTK.buttonNew rect (Just label)
+  FLTK.setCallback button (\_ -> callback)
+
+  FLTK.add window button
+  pure button
+
+modifyButtonLabel :: Button -> Text -> M ()
+modifyButtonLabel button label = liftIO $ FLTK.setLabel button label
+
+modifyButtonCallback :: Button -> IO () -> M ()
+modifyButtonCallback button callback = liftIO $ FLTK.setCallback button (\_ -> callback)
+
+deleteButton :: Button -> M ()
+deleteButton button = ReaderT $ \window -> do
+  FLTK.removeWidget window button
+  FL.deleteWidget button
+
+
+newWindow :: Size -> IO Window
 newWindow size = FLTK.windowNew size Nothing Nothing
 
 
@@ -39,8 +59,8 @@ bumpCount appState@AppState{..} = appState
 
 data AppRefs = AppRefs
   { appRefsAppState        :: IORef AppState
-  , appRefsDirectionButton :: FLTK.Ref FLTK.Button
-  , appRefsCountButton     :: FLTK.Ref FLTK.Button
+  , appRefsDirectionButton :: Button
+  , appRefsCountButton     :: Button
   }
 
 refresh :: AppRefs -> IO ()
@@ -60,27 +80,24 @@ countButtonCallback appRefs = do
   refresh appRefs
 
 
-newAppWindow :: IO (FLTK.Ref FLTK.Window)
+newAppWindow :: IO Window
 newAppWindow = mdo
-  windowRef <- newWindow (Size (Width 130) (Height 90))
-
-  appRefs <- AppRefs <$> newIORef (AppState True 0)
-                     <*> newButton (Rectangle (Position (X 30) (Y 30))
-                                              (Size (Width 30) (Height 30)))
-                                   "^"
-                                   (directionButtonCallback appRefs)
-                     <*> newButton (Rectangle (Position (X 70) (Y 30))
-                                              (Size (Width 30) (Height 30)))
-                                   "0"
-                                   (countButtonCallback appRefs)
-  FLTK.add windowRef (appRefsDirectionButton appRefs)
-  FLTK.add windowRef (appRefsCountButton appRefs)
-
-  pure windowRef
+  window <- newWindow (Size (Width 130) (Height 90))
+  appRefs <- flip runReaderT window $ do
+    AppRefs <$> liftIO (newIORef (AppState True 0))
+            <*> newButton (Rectangle (Position (X 30) (Y 30))
+                                     (Size (Width 30) (Height 30)))
+                          "^"
+                          (directionButtonCallback appRefs)
+            <*> newButton (Rectangle (Position (X 70) (Y 30))
+                                     (Size (Width 30) (Height 30)))
+                          "0"
+                          (countButtonCallback appRefs)
+  pure window
 
 main :: IO ()
 main = do
-  windowRef <- newAppWindow
-  FLTK.showWidget windowRef
+  window <- newAppWindow
+  FLTK.showWidget window
   _ <- FL.run
   FL.flush

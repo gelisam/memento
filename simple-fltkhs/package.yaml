@@ -33,6 +33,7 @@ executable:
   dependencies:
     - simple-fltkhs
     - text
+    - transformers
   when:
     - condition: flag(FastCompile)
       then:
