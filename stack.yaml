@@ -4,6 +4,9 @@ packages:
 - memento-simple-fltkhs
 - monoidal-diff
 - simple-fltkhs
+- location:
+    git: git@github.com:pbrisbin/doctest-discover.git
+    commit: df327799f7d74bcfdcb791323c0bca5c2c398c54
 extra-deps:
 - fltkhs-0.5.4.2
 
