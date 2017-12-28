@@ -35,6 +35,7 @@ when:
 
 dependencies:
   - base
+  - text
 
 library:
   source-dirs: src
@@ -43,7 +44,6 @@ library:
     - memento
     - monoidal-diff
     - simple-fltkhs
-    - text
 
 executable:
   main: Main.hs
