@@ -18,6 +18,8 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+    - QuickCheck
 
 tests:
   doctests:

@@ -1,8 +1,20 @@
-{-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, StandaloneDeriving, TypeFamilies #-}
 module MonoidalDiff where
 
 import Control.Applicative
 import Data.Monoid
+import Test.QuickCheck
+
+-- $setup
+-- >>> :set -XFlexibleInstances
+-- >>> :set -XTypeApplications
+-- >>> import Control.Arrow ((>>>))
+-- >>> import Data.Ratio
+--
+-- QuickCheck requires a 'Show' instance, but it won't be used
+-- since the test passes.
+--
+-- >>> instance Show (Endo Int) where show (Endo f) = "fmap f [0..10] = " <> show (fmap f [0..10])
 
 
 -- laws:
@@ -31,18 +43,28 @@ class Action a => Diff a where
   diff  :: Operand a -> Operand a -> a
 
 
+-- |
+-- prop> act @() mempty   x == id                x
+-- prop> act @() (p <> q) x == (act p >>> act q) x
 instance Action () where
   type Operand () = ()
   act () () = ()
 
+-- |
+-- prop> diff @() x y `act` x == y
 instance Diff () where
   diff () () = ()
 
 
+-- |
+-- prop> act @(Sum Int, Sum Int) mempty   x == id                x
+-- prop> act @(Sum Int, Sum Int) (p <> q) x == (act p >>> act q) x
 instance (Action a, Action b) => Action (a, b) where
   type Operand (a, b) = (Operand a, Operand b)
   act (a, b) (x, y) = (act a x, act b y)
 
+-- |
+-- prop> diff @(Sum Int, Sum Int) x y `act` x == y
 instance (Diff a, Diff b) => Diff (a, b) where
   diff (x, y) (x', y') = (diff x x', diff y y')
 
@@ -50,67 +72,116 @@ instance (Diff a, Diff b) => Diff (a, b) where
 data PatchEither a b
   = PatchEither a b
   | ReplaceEither (Either (Operand a) (Operand b))
+deriving instance (Eq   a, Eq   b, Eq   (Operand a), Eq   (Operand b)) => Eq   (PatchEither a b)
 deriving instance (Show a, Show b, Show (Operand a), Show (Operand b)) => Show (PatchEither a b)
 
+instance ( Arbitrary a
+         , Arbitrary b
+         , Arbitrary (Operand a)
+         , Arbitrary (Operand b)
+         ) => Arbitrary (PatchEither a b) where
+  arbitrary = oneof
+            [ PatchEither <$> arbitrary <*> arbitrary
+            , ReplaceEither <$> arbitrary
+            ]
+
+-- |
+-- prop> mempty <> x == (x :: PatchEither (Sum Int) (Last Integer))
+-- prop> x <> mempty == (x :: PatchEither (Sum Int) (Last Integer))
+-- prop> x <> (y <> z) == (x <> y) <> (z :: PatchEither (Sum Int) (Last Integer))
 instance (Action a, Action b) => Monoid (PatchEither a b) where
   mempty = PatchEither mempty mempty
   PatchEither a b `mappend` PatchEither a' b' = PatchEither (a <> a') (b <> b')
   _               `mappend` ReplaceEither x'  = ReplaceEither x'
   ReplaceEither x `mappend` p                 = ReplaceEither $ act p x
 
+-- |
+-- prop> act @(PatchEither (Sum Int) (Sum Integer)) mempty   x == id                x
+-- prop> act @(PatchEither (Sum Int) (Sum Integer)) (p <> q) x == (act p >>> act q) x
 instance (Action a, Action b) => Action (PatchEither a b) where
   type Operand (PatchEither a b) = Either (Operand a) (Operand b)
   act (PatchEither a _) (Left  x) = Left  (act a x)
   act (PatchEither _ b) (Right y) = Right (act b y)
   act (ReplaceEither x) _         = x
 
+-- |
+-- prop> diff @(PatchEither (Sum Int) (Sum Integer)) x y `act` x == y
 instance (Diff a, Diff b) => Diff (PatchEither a b) where
   diff (Left  x) (Left  x') = PatchEither (diff x x') mempty
   diff (Right y) (Right y') = PatchEither mempty (diff y y')
   diff _         x'         = ReplaceEither x'
 
 
+-- |
+-- prop> act @All mempty   x == id                x
+-- prop> act @All (p <> q) x == (act p >>> act q) x
 instance Action All where
   type Operand All = Bool
   act (All x) = (&& x)
 
 
+-- |
+-- prop> act @(Alt Maybe Int) mempty   x == id                x
+-- prop> act @(Alt Maybe Int) (p <> q) x == (act p >>> act q) x
 instance Alternative f => Action (Alt f a) where
   type Operand (Alt f a) = f a
   act (Alt x) = (<|> x)
 
 
+-- |
+-- prop> act @Any mempty   x == id                x
+-- prop> act @Any (p <> q) x == (act p >>> act q) x
 instance Action Any where
   type Operand Any = Bool
   act (Any x) = (|| x)
 
 
-instance Action (Endo a) where
-  type Operand (Endo a) = a
-  act (Endo f) = f
+-- |
+-- prop> act @(Dual (Endo Int)) mempty   x == id                x
+-- prop> act @(Dual (Endo Int)) (p <> q) x == (act p >>> act q) x
+instance Action (Dual (Endo a)) where
+  type Operand (Dual (Endo a)) = a
+  act (Dual (Endo f)) = f
 
 
+-- |
+-- prop> act @(Last Int) mempty   x == id                x
+-- prop> act @(Last Int) (p <> q) x == (act p >>> act q) x
 instance Action (Last a) where
   type Operand (Last a) = a
   act (Last Nothing)   x = x
   act (Last (Just x')) _ = x'
 
+-- |
+-- prop> diff @(Last Int) x y `act` x == y
 instance Eq a => Diff (Last a) where
   diff x x' | x == x'   = Last $ Nothing
             | otherwise = Last $ Just x'
 
 
+-- |
+-- prop> act @(Product (Ratio Integer)) mempty   x == id                x
+-- prop> act @(Product (Ratio Integer)) (p <> q) x == (act p >>> act q) x
 instance Num a => Action (Product a) where
   type Operand (Product a) = a
   act (Product x) = (* x)
 
+-- |
+-- partial if x' == 0
+--
+-- prop> y /= 0 ==> diff @(Product (Ratio Integer)) x y `act` x == y
 instance Fractional a => Diff (Product a) where
   diff x x' = Product (x' / x)
 
 
+-- |
+-- prop> act @(Sum Int) mempty   x == id                x
+-- prop> act @(Sum Int) (p <> q) x == (act p >>> act q) x
 instance Num a => Action (Sum a) where
   type Operand (Sum a) = a
   act (Sum x) = (+ x)
 
+-- |
+-- prop> diff @(Sum Int) x y `act` x == y
 instance Num a => Diff (Sum a) where
   diff x x' = Sum (x' - x)
