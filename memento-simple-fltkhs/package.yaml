@@ -45,11 +45,12 @@ library:
     - monoidal-diff
     - simple-fltkhs
 
-executable:
-  main: Main.hs
-  source-dirs: demo
-  dependencies:
-    - memento-simple-fltkhs
+executables:
+  memento-simple-fltkhs-demo:
+    main: Main.hs
+    source-dirs: demo
+    dependencies:
+      - memento-simple-fltkhs
 
 tests:
   doctests:

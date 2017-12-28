@@ -42,11 +42,12 @@ library:
   dependencies:
     - fltkhs
 
-executable:
-  main: Main.hs
-  source-dirs: demo
-  dependencies:
-    - simple-fltkhs
+executables:
+  simple-fltkhs-demo:
+    main: Main.hs
+    source-dirs: demo
+    dependencies:
+      - simple-fltkhs
 
 tests:
   doctests:
