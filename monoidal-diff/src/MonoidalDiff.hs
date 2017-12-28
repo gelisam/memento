@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies #-}
 module MonoidalDiff where
 
+import Control.Applicative
 import Data.Monoid
 
 
@@ -38,16 +39,6 @@ instance Diff () where
   diff () () = ()
 
 
-instance Action (Last a) where
-  type Operand (Last a) = a
-  act (Last Nothing)   x = x
-  act (Last (Just x')) _ = x'
-
-instance Eq a => Diff (Last a) where
-  diff x x' | x == x'   = Last $ Nothing
-            | otherwise = Last $ Just x'
-
-
 instance (Action a, Action b) => Action (a, b) where
   type Operand (a, b) = (Operand a, Operand b)
   act (a, b) (x, y) = (act a x, act b y)
@@ -77,3 +68,49 @@ instance (Diff a, Diff b) => Diff (PatchEither a b) where
   diff (Left  x) (Left  x') = PatchEither (diff x x') mempty
   diff (Right y) (Right y') = PatchEither mempty (diff y y')
   diff _         x'         = ReplaceEither x'
+
+
+instance Action All where
+  type Operand All = Bool
+  act (All x) = (&& x)
+
+
+instance Alternative f => Action (Alt f a) where
+  type Operand (Alt f a) = f a
+  act (Alt x) = (<|> x)
+
+
+instance Action Any where
+  type Operand Any = Bool
+  act (Any x) = (|| x)
+
+
+instance Action (Endo a) where
+  type Operand (Endo a) = a
+  act (Endo f) = f
+
+
+instance Action (Last a) where
+  type Operand (Last a) = a
+  act (Last Nothing)   x = x
+  act (Last (Just x')) _ = x'
+
+instance Eq a => Diff (Last a) where
+  diff x x' | x == x'   = Last $ Nothing
+            | otherwise = Last $ Just x'
+
+
+instance Num a => Action (Product a) where
+  type Operand (Product a) = a
+  act (Product x) = (* x)
+
+instance Fractional a => Diff (Product a) where
+  diff x x' = Product (x' / x)
+
+
+instance Num a => Action (Sum a) where
+  type Operand (Sum a) = a
+  act (Sum x) = (+ x)
+
+instance Num a => Diff (Sum a) where
+  diff x x' = Sum (x' - x)
