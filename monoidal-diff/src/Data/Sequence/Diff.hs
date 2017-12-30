@@ -11,9 +11,16 @@ import qualified Data.Sequence as Seq
 import MonoidalDiff
 
 -- $setup
+-- >>> :set -XFlexibleInstances
 -- >>> :set -XTypeApplications
 -- >>> import Control.Arrow ((>>>))
 -- >>> import Data.Sequence ((|>), (<|))
+--
+-- QuickCheck requires a 'Show' instance, but it won't be used
+-- since the test passes.
+--
+-- >>> instance Show (     Int ->      Int) where show f = "fmap f [0..10] = " <> show (fmap f [0..10])
+-- >>> instance Show (Sum  Int -> Sum  Int) where show f = "fmap (f . Sum) [0..10] = " <> show (fmap (f . Sum) [0..10])
 
 -- | A version of Seq.zip which keeps the leftovers.
 --
@@ -59,6 +66,12 @@ instance (Arbitrary a, Arbitrary (Operand a)) => Arbitrary (PatchL a) where
   shrink (PatchL xs1 xs2 xs3) = (PatchL <$> shrink xs1 <*> pure xs2 <*> pure xs3)
                              <> (PatchL <$> pure xs1 <*> shrink xs2 <*> pure xs3)
                              <> (PatchL <$> pure xs1 <*> pure xs2 <*> shrink xs3)
+
+-- |
+-- prop> mapAction @PatchL @(Sum Int) @(Sum Int) id id x == id x
+-- prop> (mapAction @PatchL @(Sum Int) @(Sum Int) f f' . mapAction @PatchL @(Sum Int) @(Sum Int) g g') x == mapAction (f . g) (f' . g') x
+instance ActionFunctor PatchL where
+  mapAction f f' (PatchL delete modify add) = PatchL delete (fmap f modify) (fmap f' add)
 
 -- |
 -- It's a bit complicated, so let's look at a few examples patches:
@@ -137,6 +150,12 @@ instance (Arbitrary a, Arbitrary (Operand a)) => Arbitrary (PatchR a) where
   shrink (PatchR xs1 xs2 xs3) = (PatchR <$> shrink xs1 <*> pure xs2 <*> pure xs3)
                              <> (PatchR <$> pure xs1 <*> shrink xs2 <*> pure xs3)
                              <> (PatchR <$> pure xs1 <*> pure xs2 <*> shrink xs3)
+
+-- |
+-- prop> mapAction @PatchR @(Sum Int) @(Sum Int) id id x == id x
+-- prop> (mapAction @PatchR @(Sum Int) @(Sum Int) f f' . mapAction @PatchR @(Sum Int) @(Sum Int) g g') x == mapAction (f . g) (f' . g') x
+instance ActionFunctor PatchR where
+  mapAction f f' (PatchR delete modify add) = PatchR delete (fmap f modify) (fmap f' add)
 
 -- |
 -- a  b  c  d  e

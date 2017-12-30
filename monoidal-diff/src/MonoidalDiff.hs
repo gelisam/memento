@@ -2,6 +2,7 @@
 module MonoidalDiff where
 
 import Control.Applicative
+import Data.Bifunctor
 import Data.Monoid
 import Test.QuickCheck
 
@@ -15,6 +16,9 @@ import Test.QuickCheck
 -- since the test passes.
 --
 -- >>> instance Show (Endo Int) where show (Endo f) = "fmap f [0..10] = " <> show (fmap f [0..10])
+-- >>> instance Show (     Int ->      Int) where show f = "fmap f [0..10] = " <> show (fmap f [0..10])
+-- >>> instance Show (Sum  Int -> Sum  Int) where show f = "fmap (f . Sum) [0..10] = " <> show (fmap (f . Sum) [0..10])
+-- >>> instance Show (Last Int -> Last Int) where show f = "fmap (f . Last . Just) [0..10] = " <> show (fmap (f . Last . Just) [0..10])
 
 
 -- laws:
@@ -24,6 +28,21 @@ import Test.QuickCheck
 class Monoid a => Action a where
   type Operand a
   act :: a -> Operand a -> Operand a
+
+-- laws:
+--   mapAction id id = id
+--   mapAction f f' . mapAction g g' = mapAction (f . g) (f' . g')
+class ActionFunctor f where
+  mapAction :: (a -> b) -> (Operand a -> Operand b)
+            -> f a -> f b
+
+-- laws:
+--   bimapAction id id id id = id
+--   bimapAction f1 f1' f2 f2' . mapAction g1 g1' g2 g2' = mapAction (f1 . g1) (f1' . g1') (f2 . g2) (f2' . g2')
+class ActionBifunctor f where
+  bimapAction :: (a1 -> b1) -> (Operand a1 -> Operand b1)
+              -> (a2 -> b2) -> (Operand a2 -> Operand b2)
+              -> f a1 a2 -> f b1 b2
 
 -- laws:
 --   diff x y `act` x = y
@@ -84,6 +103,13 @@ instance ( Arbitrary a
             [ PatchEither <$> arbitrary <*> arbitrary
             , ReplaceEither <$> arbitrary
             ]
+
+-- |
+-- prop> bimapAction @PatchEither @(Sum Int) @(Sum Int) @(Last Int) @(Last Int) id id id id x == id x
+-- prop> (bimapAction @PatchEither @(Sum Int) @(Sum Int) @(Last Int) @(Last Int) f1 f1' f2 f2' . bimapAction @PatchEither @(Sum Int) @(Sum Int) @(Last Int) @(Last Int) g1 g1' g2 g2') x == bimapAction (f1 . g1) (f1' . g1') (f2 . g2) (f2' . g2') x
+instance ActionBifunctor PatchEither where
+  bimapAction f _  g _  (PatchEither a b) = PatchEither (f a) (g b)
+  bimapAction _ f' _ g' (ReplaceEither x) = ReplaceEither (bimap f' g' x)
 
 -- |
 -- prop> mempty <> x == (x :: PatchEither (Sum Int) (Last Integer))
