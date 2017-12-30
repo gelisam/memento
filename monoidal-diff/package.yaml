@@ -11,10 +11,13 @@ license: PublicDomain
 github: gelisam/memento
 category: Data
 
-ghc-options: -Wall -Werror
+ghc-options: -Wall
+#ghc-options: -Wall -Werror
 
 dependencies:
   - base
+  - containers
+  - debug
 
 library:
   source-dirs: src
