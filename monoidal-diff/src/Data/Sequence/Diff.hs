@@ -135,6 +135,13 @@ instance Action a => Action (PatchL a) where
       (xs''a, _, xs''b) = zipLWith act modify xs'
       xs'' = add <> xs''a <> xs''b
 
+-- |
+-- prop> diff @(PatchL (Sum Int)) x y `act` x == y
+instance Diff a => Diff (PatchL a) where
+  diff xs1 xs2 = PatchL (() <$ xs1') as xs2'
+    where
+      (xs1', xs2', as) = zipRWith diff xs1 xs2
+
 
 -- | Deletes then adds elements at the _right_ end of the sequence.
 data PatchR a = PatchR
@@ -216,3 +223,10 @@ instance Action a => Action (PatchR a) where
       (xs', _, _) = zipR xs delete
       (_, xs''a, xs''b) = zipRWith act modify xs'
       xs'' = xs''a <> xs''b <> add
+
+-- |
+-- prop> diff @(PatchL (Sum Int)) x y `act` x == y
+instance Diff a => Diff (PatchR a) where
+  diff xs1 xs2 = PatchR (() <$ xs1') as xs2'
+    where
+      (as, xs1', xs2') = zipLWith diff xs1 xs2
